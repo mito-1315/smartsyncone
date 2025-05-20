@@ -6,6 +6,7 @@ import { dirname } from 'path';
 import { ENV } from './config/env.config.js';
 import { loadModels } from './middleware/face-api.middleware.js';
 import faceRoutes from './routes/face.routes.js';
+import headRoutes from './routes/head.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -25,7 +26,12 @@ app.get('/face-recognition', (req, res) => {
     res.sendFile(join(__dirname, 'screens', 'face-recognition.html'));
 });
 
+app.get('/headcount', (req, res) => {
+    res.sendFile(join(__dirname, 'screens', 'headcount.html'));
+});
+
 app.use('/api', faceRoutes);
+app.use('/api', headRoutes);
 
 const startServer = async () => {
     try {

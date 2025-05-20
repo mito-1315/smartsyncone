@@ -71,13 +71,16 @@
 <body>
     <div class="container">
         <video id="video" autoplay></video>
+        <button id="capture">Capture Image</button>
+        <canvas id="canvas" style="display:none;"></canvas>
+        
         <div class="comparison-section">
             <input type="text" id="rollnumber" placeholder="Enter Roll Number">
             <button id="submit">Compare Images</button>
             <div id="loader" class="loader"></div>
             <div class="image-container">
-                <img id="studentImage1" style="display: none;" alt="Student Image 1">
-                <img id="studentImage2" style="display: none;" alt="Student Image 2">
+                <img id="capturedImage" style="display: none;" alt="Captured Image">
+                <div id="databaseImages"></div>
             </div>
             <div id="result" class="result-container"></div>
         </div>
@@ -85,10 +88,13 @@
     </div>
 
     <script>
-        // Access the camera
+        let stream;
+        const imagesDB = [];
+        let imageLive = null;
+
         async function initCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
+                stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: "user" }
                 });
                 const videoElement = document.getElementById('video');
@@ -99,62 +105,74 @@
             }
         }
 
-        // Initialize camera when page loads
-        window.addEventListener('load', initCamera);
+        document.getElementById('capture').addEventListener('click', () => {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const capturedImage = document.getElementById('capturedImage');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            imageLive = canvas.toDataURL('image/jpeg');
+            capturedImage.src = imageLive;
+            capturedImage.style.display = 'block';
+        });
 
         document.getElementById('submit').addEventListener('click', async () => {
+            if (!imageLive) {
+                alert('Please capture an image first!');
+                return;
+            }
+
             const rollNo = document.getElementById('rollnumber').value;
-            const image1Element = document.getElementById('studentImage1');
-            const image2Element = document.getElementById('studentImage2');
+            if (!rollNo) {
+                alert('Please enter a roll number!');
+                return;
+            }
+
             const resultElement = document.getElementById('result');
             const loaderElement = document.getElementById('loader');
             
             loaderElement.style.display = 'block';
             resultElement.textContent = '';
-            image1Element.style.display = 'none';
-            image2Element.style.display = 'none';
 
             try {
-                const response = await fetch('/api/getImage', {
+                const response = await fetch('/api/compare-faces', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ rollNo })
+                    body: JSON.stringify({ 
+                        rollNo,
+                        capturedImage: imageLive
+                    })
                 });
-                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 
+                const data = await response.json();
                 loaderElement.style.display = 'none';
                 
                 if (data.success) {
-                    if (data.image1) {
-                        image1Element.src = data.image1;
-                        image1Element.style.display = 'block';
-                    }
-                    if (data.image2) {
-                        image2Element.src = data.image2;
-                        image2Element.style.display = 'block';
-                    }
-                    
-                    const matchClass = data.comparison.isSamePerson ? 'match' : 'no-match';
+                    const matchClass = data.isMatch ? 'match' : 'no-match';
                     resultElement.innerHTML = `
-                        <p>Images loaded successfully</p>
-                        <p class="${matchClass}">Same person: ${data.comparison.isSamePerson}</p>
-                        <p>Similarity: ${data.comparison.similarity.toFixed(2)}%</p>
+                        <p class="${matchClass}">Match: ${data.isMatch ? 'Yes' : 'No'}</p>
+                        <p>Confidence: ${data.bestMatchPercentage.toFixed(2)}%</p>
                     `;
                 } else {
-                    resultElement.textContent = 'Failed to load images';
-                    image1Element.style.display = 'none';
-                    image2Element.style.display = 'none';
+                    resultElement.innerHTML = `<p class="no-match">Verification failed: ${data.error || 'Unknown error'}</p>`;
                 }
             } catch (error) {
                 console.error('Error:', error);
-                resultElement.textContent = 'Error loading images';
-                image1Element.style.display = 'none';
-                image2Element.style.display = 'none';
+                resultElement.innerHTML = `<p class="no-match">Error: ${error.message}</p>`;
                 loaderElement.style.display = 'none';
             }
         });
+
+        window.addEventListener('load', initCamera);
     </script>
 </body>
 </html>

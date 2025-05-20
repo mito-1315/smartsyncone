@@ -3,10 +3,19 @@ import canvas from 'canvas';
 import fetch from 'node-fetch';
 import sharp from 'sharp';
 
-export async function processImage(imageUrl) {
-    const response = await fetch(imageUrl);
-    const arrayBuffer = await response.arrayBuffer();
-    const imageBuffer = Buffer.from(arrayBuffer);
+export async function processImage(imageData) {
+    let imageBuffer;
+    
+    if (imageData.startsWith('data:image')) {
+        // Handle base64 image data
+        const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+        imageBuffer = Buffer.from(base64Data, 'base64');
+    } else {
+        // Handle URL
+        const response = await fetch(imageData);
+        const arrayBuffer = await response.arrayBuffer();
+        imageBuffer = Buffer.from(arrayBuffer);
+    }
     
     const processedBuffer = await sharp(imageBuffer, {
         limitInputPixels: false
