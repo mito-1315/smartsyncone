@@ -1,51 +1,48 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face Comparison</title>
+    <title>SmartSyncOne Portal</title>
     <style>
-        .result-container {
-            margin-top: 20px;
-            padding: 10px;
-            border-radius: 5px;
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
         }
-        .match { color: green; font-weight: bold; }
-        .no-match { color: red; font-weight: bold; }
+        .container {
+            text-align: center;
+        }
+        .button-container {
+            margin-top: 30px;
+        }
+        .portal-button {
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            transition: background-color 0.3s;
+        }
+        .portal-button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
-    <input type="text" id="rollnumber" placeholder="Enter Roll Number">
-    <button id="submit">Enter</button>
-    <div id="result" class="result-container"></div>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.16.0/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js"></script>
-    <script>
-        document.getElementById('submit').addEventListener('click', async () => {
-            const rollNo = document.getElementById('rollnumber').value;
-            const resultElement = document.getElementById('result');
-
-            try {
-                const response = await fetch('/getImage', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ rollNo })
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    const matchClass = data.comparison.isSamePerson ? 'match' : 'no-match';
-                    resultElement.innerHTML = `
-                        <p class="${matchClass}">Same person: ${data.comparison.isSamePerson}</p>
-                        <p>Similarity: ${data.comparison.similarity.toFixed(2)}%</p>
-                    `;
-                } else {
-                    resultElement.textContent = 'Comparison failed';
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                resultElement.textContent = 'Error processing comparison';
-            }
-        });
-    </script>
+    <div class="container">
+        <h1>Welcome to SmartSyncOne</h1>
+        <div class="button-container">
+            <button class="portal-button" onclick="window.location.href='/face'">Face Recognition Portal</button>
+            <button class="portal-button" onclick="window.location.href='/video/capture'">Head Count Portal</button>
+        </div>
+    </div>
 </body>
 </html>

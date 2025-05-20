@@ -121,6 +121,10 @@ app.get('/', (req, res) => {
     res.sendFile(join(__dirname, 'index.html'));
 });
 
+app.get('/face', (req, res) => {
+    res.sendFile(join(__dirname, 'views/face.html'));
+});
+
 app.use('/video', videoRoutes);
 
 // Handle roll number submission with face comparison
