@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Headcount - SmartSyncOne</title>
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .upload-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .results-section {
+            margin-top: 20px;
+        }
+        .loader {
+            display: none;
+            margin: 20px auto;
+            border: 5px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 5px solid #3498db;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Video Headcount Analysis</h1>
+        
+        <div class="upload-section">
+            <input type="file" id="videoInput" accept="video/*">
+            <button onclick="uploadVideo()">Process Video</button>
+        </div>
+
+        <div id="loader" class="loader"></div>
+        <div id="results" class="results-section"></div>
+    </div>
+
+    <script>
+        async function uploadVideo() {
+            const videoInput = document.getElementById('videoInput');
+            const loader = document.getElementById('loader');
+            const results = document.getElementById('results');
+
+            if (!videoInput.files || !videoInput.files[0]) {
+                alert('Please select a video file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('video', videoInput.files[0]);
+
+            loader.style.display = 'block';
+            results.innerHTML = '';
+
+            try {
+                const response = await fetch('http://localhost:5050/process-video', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    results.innerHTML = `
+                        <h2>Results:</h2>
+                        <p>Maximum number of persons detected: ${data.results.max_person_count}</p>
+                    `;
+                } else {
+                    results.innerHTML = `<p>Error: ${data.error}</p>`;
+                }
+            } catch (error) {
+                results.innerHTML = `<p>Error: ${error.message}</p>`;
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
