@@ -8,6 +8,7 @@ import * as faceapi from 'face-api.js';
 import canvas from 'canvas';
 import fetch from 'node-fetch';
 import sharp from 'sharp';
+import videoRoutes from './routes/video.routes.js';
 
 // Fix dirname initialization
 const __filename = fileURLToPath(import.meta.url);
@@ -111,6 +112,16 @@ async function comparefaces(img1, img2) {
 app.get('/', (req, res) => {
     res.sendFile(join(__dirname, 'index.html'));
 });
+
+// Serve static files from public directory
+app.use(express.static(join(__dirname, 'public')));
+
+// Routes
+app.get('/', (req, res) => {
+    res.sendFile(join(__dirname, 'index.html'));
+});
+
+app.use('/video', videoRoutes);
 
 // Handle roll number submission with face comparison
 app.post('/getImage', async (req, res) => {
