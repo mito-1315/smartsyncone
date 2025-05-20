@@ -26,11 +26,26 @@
             color: red;
             font-weight: bold;
         }
+        .loader {
+            display: none;
+            margin: 20px auto;
+            border: 5px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 5px solid #3498db;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
     <input type="text" id="rollnumber" placeholder="Enter Roll Number">
     <button id="submit">Enter</button>
+    <div id="loader" class="loader"></div>
     <div class="image-container">
         <img id="studentImage1" style="display: none;" alt="Student Image 1">
         <img id="studentImage2" style="display: none;" alt="Student Image 2">
@@ -43,9 +58,16 @@
             const image1Element = document.getElementById('studentImage1');
             const image2Element = document.getElementById('studentImage2');
             const resultElement = document.getElementById('result');
+            const loaderElement = document.getElementById('loader');
+            
+            // Show loader and hide previous results
+            loaderElement.style.display = 'block';
+            resultElement.textContent = '';
+            image1Element.style.display = 'none';
+            image2Element.style.display = 'none';
 
             try {
-                const response = await fetch('/getImage', {
+                const response = await fetch('/api/getImage', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -53,6 +75,9 @@
                     body: JSON.stringify({ rollNo })
                 });
                 const data = await response.json();
+                
+                // Hide loader
+                loaderElement.style.display = 'none';
                 
                 if (data.success) {
                     // Display both images
@@ -82,6 +107,7 @@
                 resultElement.textContent = 'Error loading images';
                 image1Element.style.display = 'none';
                 image2Element.style.display = 'none';
+                loaderElement.style.display = 'none';
             }
         });
     </script>
