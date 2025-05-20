@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition - SmartSyncOne</title>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        #video {
+            width: 100%;
+            max-width: 640px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .back-button {
+            padding: 10px 20px;
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .back-button:hover {
+            background-color: #545b62;
+        }
+        .image-container {
+            margin-top: 20px;
+            display: flex;
+            gap: 20px;
+        }
+        .image-container img {
+            max-width: 300px;
+            height: auto;
+        }
+        .result-container {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .match { color: green; font-weight: bold; }
+        .no-match { color: red; font-weight: bold; }
+        .loader {
+            display: none;
+            margin: 20px auto;
+            border: 5px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 5px solid #3498db;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .comparison-section {
+            margin-top: 30px;
+            padding: 20px;
+            border-top: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <video id="video" autoplay></video>
+        <div class="comparison-section">
+            <input type="text" id="rollnumber" placeholder="Enter Roll Number">
+            <button id="submit">Compare Images</button>
+            <div id="loader" class="loader"></div>
+            <div class="image-container">
+                <img id="studentImage1" style="display: none;" alt="Student Image 1">
+                <img id="studentImage2" style="display: none;" alt="Student Image 2">
+            </div>
+            <div id="result" class="result-container"></div>
+        </div>
+        <button class="back-button" onclick="window.location.href='/'">Back to Home</button>
+    </div>
+
+    <script>
+        // Access the camera
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "user" }
+                });
+                const videoElement = document.getElementById('video');
+                videoElement.srcObject = stream;
+            } catch (err) {
+                console.error("Error accessing camera:", err);
+                alert("Error accessing camera. Please make sure you've granted camera permissions.");
+            }
+        }
+
+        // Initialize camera when page loads
+        window.addEventListener('load', initCamera);
+
+        document.getElementById('submit').addEventListener('click', async () => {
+            const rollNo = document.getElementById('rollnumber').value;
+            const image1Element = document.getElementById('studentImage1');
+            const image2Element = document.getElementById('studentImage2');
+            const resultElement = document.getElementById('result');
+            const loaderElement = document.getElementById('loader');
+            
+            loaderElement.style.display = 'block';
+            resultElement.textContent = '';
+            image1Element.style.display = 'none';
+            image2Element.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/getImage', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ rollNo })
+                });
+                const data = await response.json();
+                
+                loaderElement.style.display = 'none';
+                
+                if (data.success) {
+                    if (data.image1) {
+                        image1Element.src = data.image1;
+                        image1Element.style.display = 'block';
+                    }
+                    if (data.image2) {
+                        image2Element.src = data.image2;
+                        image2Element.style.display = 'block';
+                    }
+                    
+                    const matchClass = data.comparison.isSamePerson ? 'match' : 'no-match';
+                    resultElement.innerHTML = `
+                        <p>Images loaded successfully</p>
+                        <p class="${matchClass}">Same person: ${data.comparison.isSamePerson}</p>
+                        <p>Similarity: ${data.comparison.similarity.toFixed(2)}%</p>
+                    `;
+                } else {
+                    resultElement.textContent = 'Failed to load images';
+                    image1Element.style.display = 'none';
+                    image2Element.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultElement.textContent = 'Error loading images';
+                image1Element.style.display = 'none';
+                image2Element.style.display = 'none';
+                loaderElement.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -13,11 +13,16 @@ const __dirname = dirname(__filename);
 const app = express();
 
 app.use(express.static(__dirname));
+app.use('/screens', express.static(join(__dirname, 'screens')));
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
 app.get('/', (req, res) => {
-    res.sendFile(join(__dirname, 'index.html'));
+    res.sendFile(join(__dirname, 'screens', 'index.html'));
+});
+
+app.get('/face-recognition', (req, res) => {
+    res.sendFile(join(__dirname, 'screens', 'face-recognition.html'));
 });
 
 app.use('/api', faceRoutes);
