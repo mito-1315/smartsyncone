@@ -7,6 +7,7 @@ import { ENV } from './config/env.config.js';
 import { loadModels } from './middleware/face-api.middleware.js';
 import faceRoutes from './routes/face.routes.js';
 import headRoutes from './routes/head.routes.js';
+import qrRoutes from './routes/qr.routes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -32,6 +33,7 @@ app.get('/headcount', (req, res) => {
 
 app.use('/api', faceRoutes);
 app.use('/api', headRoutes);
+app.use('/api', qrRoutes);
 
 const startServer = async () => {
     try {

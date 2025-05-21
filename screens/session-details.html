@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Details - SmartSyncOne</title>
+    <style>
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .input-group {
+            margin: 20px 0;
+        }
+        .input-group input {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .details {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: none;
+        }
+        .error {
+            color: red;
+            margin: 10px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Session Details</h1>
+        
+        <div class="input-group">
+            <input type="text" id="staffId" placeholder="Enter Staff ID">
+            <button class="button" onclick="getSessionDetails()">Submit</button>
+        </div>
+
+        <div id="error" class="error"></div>
+
+        <div id="details" class="details">
+            <h2>Session Information</h2>
+            <p><strong>Staff ID:</strong> <span id="displayStaffId"></span></p>
+            <p><strong>Staff Name:</strong> <span id="displayStaffName"></span></p>
+            <p><strong>Session ID:</strong> <span id="displaySessionId"></span></p>
+            <p><strong>Date & Time:</strong> <span id="displayDateTime"></span></p>
+            
+            <button class="button" onclick="proceedToQR()">Generate QR Code</button>
+        </div>
+    </div>
+
+    <script>
+        async function getSessionDetails() {
+            const staffId = document.getElementById('staffId').value;
+            const errorDiv = document.getElementById('error');
+            const detailsDiv = document.getElementById('details');
+
+            if (!staffId) {
+                errorDiv.textContent = 'Please enter a Staff ID';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/session/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ staffId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('displayStaffId').textContent = data.staffID;
+                    document.getElementById('displayStaffName').textContent = data.staffName;
+                    document.getElementById('displaySessionId').textContent = data.sessionID;
+                    document.getElementById('displayDateTime').textContent = new Date(data.dateTime).toLocaleString();
+                    
+                    errorDiv.style.display = 'none';
+                    detailsDiv.style.display = 'block';
+                } else {
+                    errorDiv.textContent = data.error;
+                    errorDiv.style.display = 'block';
+                    detailsDiv.style.display = 'none';
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Error fetching session details';
+                errorDiv.style.display = 'block';
+                detailsDiv.style.display = 'none';
+            }
+        }
+
+        function proceedToQR() {
+            const sessionId = document.getElementById('displaySessionId').textContent;
+            if (!sessionId) {
+                alert('No session ID available');
+                return;
+            }
+            window.location.href = `/api/qr-generator?sessionId=${sessionId}`;
+        }
+    </script>
+</body>
+</html>
