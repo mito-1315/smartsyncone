@@ -1,5 +1,6 @@
-node_modules
+node_modules/
 .env
 app copy.py
-index2.htmlvenv/
-yolo11x.pt
+index2.html
+venv/
+*.pt
