@@ -3,5 +3,5 @@ import { ENV } from './env.config.js';
 
 export const supabase = createClient(
     ENV.supabaseUrl,
-    ENV.supabaseKey
+    ENV.supabaseServiceRoleKey
 );

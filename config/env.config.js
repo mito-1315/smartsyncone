@@ -12,5 +12,6 @@ export const ENV = {
     modelsPath: join(dirname(dirname(__filename)), 'models'),
     port: process.env.PORT || 3000,
     supabaseUrl: process.env.SUPABASE_URL,
-    supabaseKey: process.env.SUPABASE_KEY
+    supabaseKey: process.env.SUPABASE_KEY,
+    supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY
 };

@@ -1,13 +1,9 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
 import cv2
 import numpy as np
 import os
 from ultralytics import YOLO
-import tempfile
-
-app = Flask(__name__)
-CORS(app)
+import sys
+import json
 
 # Load the YOLO model
 model = YOLO("yolo11x.pt")
@@ -22,10 +18,11 @@ def process_video(video_path):
     target_fps = 4
     frames = []
     max_person_count = 0
+    total_person_count = 0
+    frame_count = 0
     confidence = 0.50
 
     # Collect frames at desired interval
-    frame_count = 0
     while cap.isOpened():
         cap.set(cv2.CAP_PROP_POS_MSEC, frame_count * (1000/target_fps))
         success, frame = cap.read()
@@ -35,42 +32,32 @@ def process_video(video_path):
         frame_count += 1
 
     # Process collected frames
+    processed_frames = 0
     for frame in frames:
         results = model(frame, verbose=False)
         person_count = len([box for box in results[0].boxes if box.cls == 0 and box.conf > confidence])
         max_person_count = max(max_person_count, person_count)
+        total_person_count += person_count
+        processed_frames += 1
 
     cap.release()
+
+    avg_person_count = round(total_person_count / processed_frames, 2) if processed_frames > 0 else 0
+    
     return {
-        "max_person_count": max_person_count
+        "max_person_count": max_person_count,
+        "avg_person_count": avg_person_count
     }
 
-@app.route('/process-video', methods=['POST'])
-def process_video_route():
-    try:
-        if 'video' not in request.files:
-            return jsonify({'error': 'No video file provided'}), 400
-
-        video_file = request.files['video']
-        
-        # Create a temporary file to store the uploaded video
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp_file:
-            video_file.save(tmp_file.name)
-            results = process_video(tmp_file.name)
-            
-            # Clean up the temporary file
-            os.unlink(tmp_file.name)
-            
-            return jsonify({
-                'success': True,
-                'results': results
-            })
-
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5050, debug=True)
+    if len(sys.argv) != 2:
+        print(json.dumps({"error": "Video path not provided"}))
+        sys.exit(1)
+
+    try:
+        video_path = sys.argv[1]
+        results = process_video(video_path)
+        print(json.dumps({"success": True, "results": results}))
+    except Exception as e:
+        print(json.dumps({"success": False, "error": str(e)}))
+        sys.exit(1)

@@ -24,6 +24,26 @@
             border: 1px solid #ddd;
             border-radius: 5px;
         }
+        .button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .button:hover {
+            background-color: #c82333;
+        }
+        .headcount-btn {
+            background-color: #28a745;
+            display: none;
+        }
+        .headcount-btn:hover {
+            background-color: #218838;
+        }
     </style>
 </head>
 <body>
@@ -36,6 +56,8 @@
             <p><strong>IP Address:</strong> <span id="ipAddress">Loading...</span></p>
             <p><strong>Session ID:</strong> <span id="sessionId">Loading...</span></p>
         </div>
+        <button id="stopQR" class="button">Stop QR Session</button>
+        <button id="headcountBtn" class="button headcount-btn">Go to Headcount</button>
     </div>
 
     <script>
@@ -50,6 +72,38 @@
             }
         }
 
+        async function stopQRSession(sessionId) {
+            console.log('Attempting to stop QR session:', sessionId);
+            try {
+                const stopData = {
+                    sessionID: sessionId,
+                    qrStop: new Date().toISOString()
+                };
+                console.log('Stop session payload:', stopData);
+
+                const response = await fetch('/api/session/stop', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(stopData)
+                });
+
+                const result = await response.json();
+                console.log('Stop session response:', result);
+
+                if (response.ok) {
+                    console.log('QR session stopped successfully');
+                    document.getElementById('stopQR').style.display = 'none';
+                    document.getElementById('headcountBtn').style.display = 'inline-block';
+                } else {
+                    console.error('Failed to stop QR session:', result.error);
+                }
+            } catch (error) {
+                console.error('Error in stopQRSession:', error);
+            }
+        }
+
         async function generateQR() {
             const urlParams = new URLSearchParams(window.location.search);
             const sessionId = urlParams.get('sessionId');
@@ -59,13 +113,18 @@
                 return;
             }
 
-            const ipAddress = await getNetworkInfo();
+            document.getElementById('stopQR').onclick = () => stopQRSession(sessionId);
+            document.getElementById('headcountBtn').onclick = () => {
+                window.location.href = `/headcount?sessionID=${sessionId}`;
+            };
 
+            const ipAddress = await getNetworkInfo();
             document.getElementById('ipAddress').textContent = ipAddress;
             document.getElementById('sessionId').textContent = sessionId;
 
-            // Generate QR code with URL format
-            const attendanceUrl = `http://${ipAddress}:3000/attendance?sessionId=${sessionId}`;
+            // Include IP in URL
+            const attendanceUrl = `http://localhost:3000/face-recognition?sessionID=${sessionId}&staffIP=${ipAddress}`;
+            console.log('Generated URL with IP:', attendanceUrl);
             
             QRCode.toCanvas(document.getElementById('qrcode'), attendanceUrl, {
                 width: 300,

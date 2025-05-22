@@ -57,6 +57,14 @@
             height: 50px;
             animation: spin 1s linear infinite;
         }
+        .error-message {
+            color: red;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid red;
+            border-radius: 5px;
+            display: none;
+        }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
@@ -70,7 +78,8 @@
 </head>
 <body>
     <div class="container">
-        <video id="video" autoplay></video>
+        <div id="error-container" class="error-message"></div>
+        <video id="video" autoplay playsinline></video>
         <button id="capture">Capture Image</button>
         <canvas id="canvas" style="display:none;"></canvas>
         
@@ -91,19 +100,82 @@
         let stream;
         const imagesDB = [];
         let imageLive = null;
+        let sessionId = '';
 
         async function initCamera() {
+            const videoElement = document.getElementById('video');
+            const errorContainer = document.getElementById('error-container');
+
             try {
+                // Check if navigator.mediaDevices exists, if not, create it
+                if (!navigator.mediaDevices) {
+                    navigator.mediaDevices = {};
+                }
+
+                // Check if getUserMedia exists, if not, get legacy method
+                if (!navigator.mediaDevices.getUserMedia) {
+                    navigator.mediaDevices.getUserMedia = function(constraints) {
+                        const getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+                        
+                        if (!getUserMedia) {
+                            return Promise.reject(new Error('getUserMedia is not supported in this browser'));
+                        }
+
+                        return new Promise((resolve, reject) => {
+                            getUserMedia.call(navigator, constraints, resolve, reject);
+                        });
+                    }
+                }
+
                 stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: "user" }
+                    video: { 
+                        facingMode: "user",
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
                 });
-                const videoElement = document.getElementById('video');
+                
                 videoElement.srcObject = stream;
+                errorContainer.style.display = 'none';
+                
+                // Add play handler
+                videoElement.onplay = () => {
+                    errorContainer.style.display = 'none';
+                };
+
             } catch (err) {
-                console.error("Error accessing camera:", err);
-                alert("Error accessing camera. Please make sure you've granted camera permissions.");
+                console.error("Camera error:", err);
+                errorContainer.style.display = 'block';
+                
+                if (err.name === 'NotAllowedError') {
+                    errorContainer.textContent = 'Camera access denied. Please allow camera access in your browser settings and refresh the page.';
+                } else if (err.name === 'NotFoundError') {
+                    errorContainer.textContent = 'No camera device found. Please make sure your camera is connected.';
+                } else if (err.name === 'NotReadableError') {
+                    errorContainer.textContent = 'Camera is in use by another application. Please close other applications using the camera.';
+                } else {
+                    errorContainer.textContent = `Camera error: ${err.message}. Please refresh the page or try a different browser.`;
+                }
             }
         }
+
+        // Add cleanup function
+        window.addEventListener('beforeunload', () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get sessionId from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            sessionId = urlParams.get('sessionID'); // Changed from sessionId to sessionID
+            console.log('Retrieved sessionID from URL:', sessionId);
+            
+            if (!sessionId) {
+                console.warn('No session ID provided in URL parameters');
+            }
+        });
 
         document.getElementById('capture').addEventListener('click', () => {
             const video = document.getElementById('video');
@@ -145,7 +217,8 @@
                     },
                     body: JSON.stringify({ 
                         rollNo,
-                        capturedImage: imageLive
+                        capturedImage: imageLive,
+                        sessionId // Add sessionId to the request
                     })
                 });
 

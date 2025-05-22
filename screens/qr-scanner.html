@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Scanner - SmartSyncOne</title>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        #reader {
+            width: 100%;
+            margin: 20px auto;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: none;
+        }
+        .error {
+            color: red;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid red;
+            border-radius: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Scan QR Code</h1>
+        <div id="reader"></div>
+        <div id="error" class="error"></div>
+    </div>
+
+    <script>
+        async function handleQRCode(decodedText) {
+            try {
+                // Get student's current IP
+                const response = await fetch('/api/network-info');
+                const { ip: studentIP } = await response.json();
+                console.log('Student IP:', studentIP);
+
+                // Parse URL from QR code
+                const url = new URL(decodedText);
+                const staffIP = url.searchParams.get('staffIP');
+                const sessionID = url.searchParams.get('sessionID');
+                console.log('Staff IP from QR:', staffIP);
+
+                if (!staffIP || !sessionID) {
+                    throw new Error('Invalid QR code: Missing required parameters');
+                }
+
+                // Compare IPs
+                if (studentIP !== staffIP) {
+                    document.getElementById('error').style.display = 'block';
+                    document.getElementById('error').textContent = 
+                        'You must be on the same network as the staff to proceed.';
+                    return;
+                }
+
+                // Redirect to face recognition if IPs match
+                window.location.href = `/face-recognition?sessionID=${sessionID}`;
+
+            } catch (error) {
+                document.getElementById('error').style.display = 'block';
+                document.getElementById('error').textContent = error.message;
+            }
+        }
+
+        const html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", { fps: 10, qrbox: 250 }
+        );
+
+        html5QrcodeScanner.render((decodedText) => {
+            html5QrcodeScanner.clear();
+            handleQRCode(decodedText);
+        });
+    </script>
+</body>
+</html>
